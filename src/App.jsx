@@ -157,8 +157,35 @@ export default function DailyTracker() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!user || loading) return;
+    try {
+      localStorage.setItem('cache_habits', JSON.stringify(habits));
+      localStorage.setItem('cache_routine_items', JSON.stringify(routineItems));
+      localStorage.setItem('cache_routine_completions', JSON.stringify(routineCompletions));
+      localStorage.setItem('cache_habit_completions', JSON.stringify(habitCompletions));
+      localStorage.setItem('cache_journal_entries', JSON.stringify(journalEntries));
+      localStorage.setItem('cache_weekly_reflections', JSON.stringify(weeklyReflections));
+    } catch {}
+  }, [user, loading, habits, routineItems, routineCompletions, habitCompletions, journalEntries, weeklyReflections]);
+
   const loadData = async (userId) => {
-    setLoading(true);
+    // Load from cache immediately so the UI renders without waiting for Supabase
+    const cachedHabits = lsGet('cache_habits');
+    const cachedRoutine = lsGet('cache_routine_items');
+    const cachedRc = lsGet('cache_routine_completions');
+    const cachedHc = lsGet('cache_habit_completions');
+    const cachedJe = lsGet('cache_journal_entries');
+    const cachedWr = lsGet('cache_weekly_reflections');
+    if (cachedHabits) setHabits(cachedHabits);
+    if (cachedRoutine) setRoutineItems(cachedRoutine);
+    if (cachedRc) setRoutineCompletions(cachedRc);
+    if (cachedHc) setHabitCompletions(cachedHc);
+    if (cachedJe) setJournalEntries(cachedJe);
+    if (cachedWr) setWeeklyReflections(cachedWr);
+    setLoading(false);
+
+    // Fetch fresh data from Supabase in the background
     const [habitsRes, routineRes, rcRes, hcRes, jeRes, wrRes] = await Promise.all([
       supabase.from('habits').select('*').eq('user_id', userId).order('created_at'),
       supabase.from('routine_items').select('*').eq('user_id', userId).order('sort_order'),
@@ -168,15 +195,13 @@ export default function DailyTracker() {
       supabase.from('weekly_reflections').select('*').eq('user_id', userId),
     ]);
 
-    if (habitsRes.data?.length)
+    if (habitsRes.data)
       setHabits(habitsRes.data.map(({ id, name, created_at }) => ({ id, name, createdAt: created_at })));
-
     if (routineRes.data?.length)
       setRoutineItems(routineRes.data.map(r => ({
         id: r.id, iconName: r.icon_name, title: r.title, subtitle: r.subtitle,
         hasJournal: r.has_journal, journalPrompt: r.journal_prompt || '',
       })));
-
     if (rcRes.data) {
       const rc = {};
       rcRes.data.forEach(({ date, item_id, done }) => { if (!rc[date]) rc[date] = {}; rc[date][item_id] = done; });
@@ -197,7 +222,6 @@ export default function DailyTracker() {
       wrRes.data.forEach(({ week_key, worked, didnt, adjust }) => { wr[week_key] = { worked: worked || '', didnt: didnt || '', adjust: adjust || '' }; });
       setWeeklyReflections(wr);
     }
-    setLoading(false);
   };
 
   const sendOtp = async () => {
