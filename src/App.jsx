@@ -79,9 +79,9 @@ async function migrateFromLocalStorage(userId) {
 
 export default function DailyTracker() {
   const [user, setUser] = useState(null);
-  const [authMode, setAuthMode] = useState('signin');
+  const [authStep, setAuthStep] = useState('email');
   const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
+  const [authOtp, setAuthOtp] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
@@ -200,17 +200,22 @@ export default function DailyTracker() {
     setLoading(false);
   };
 
-  const handleAuth = async () => {
-    if (!authEmail.trim() || !authPassword.trim()) return;
+  const sendOtp = async () => {
+    if (!authEmail.trim()) return;
     setAuthLoading(true);
     setAuthError('');
-    if (authMode === 'signup') {
-      const { error } = await supabase.auth.signUp({ email: authEmail, password: authPassword });
-      if (error) setAuthError(error.message);
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
-      if (error) setAuthError(error.message);
-    }
+    const { error } = await supabase.auth.signInWithOtp({ email: authEmail.trim() });
+    if (error) setAuthError(error.message);
+    else setAuthStep('otp');
+    setAuthLoading(false);
+  };
+
+  const verifyOtp = async () => {
+    if (!authOtp.trim()) return;
+    setAuthLoading(true);
+    setAuthError('');
+    const { error } = await supabase.auth.verifyOtp({ email: authEmail.trim(), token: authOtp.trim(), type: 'email' });
+    if (error) setAuthError(error.message);
     setAuthLoading(false);
   };
 
@@ -359,40 +364,50 @@ export default function DailyTracker() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center px-6" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
         <div className="w-full max-w-sm">
           <h1 className="text-3xl font-light text-stone-900 mb-1">Daily Tracker</h1>
-          <p className="text-sm text-stone-400 mb-8">{authMode === 'signup' ? 'Create an account to get started' : 'Sign in to continue'}</p>
-          <div className="space-y-3">
-            <input
-              type="email"
-              value={authEmail}
-              onChange={e => setAuthEmail(e.target.value)}
-              placeholder="Email"
-              autoComplete="email"
-              className="w-full px-4 py-3 bg-white border border-stone-200 rounded-lg outline-none focus:border-stone-400 text-sm"
-            />
-            <input
-              type="password"
-              value={authPassword}
-              onChange={e => setAuthPassword(e.target.value)}
-              placeholder="Password (min 6 characters)"
-              autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'}
-              onKeyDown={e => e.key === 'Enter' && handleAuth()}
-              className="w-full px-4 py-3 bg-white border border-stone-200 rounded-lg outline-none focus:border-stone-400 text-sm"
-            />
-            {authError && <p className="text-red-400 text-xs">{authError}</p>}
-            <button
-              onClick={handleAuth}
-              disabled={authLoading}
-              className="w-full py-3 bg-stone-800 text-white rounded-lg text-sm hover:bg-stone-900 transition-colors disabled:opacity-50"
-            >
-              {authLoading ? '...' : authMode === 'signup' ? 'Create account' : 'Sign in'}
-            </button>
-          </div>
-          <button
-            onClick={() => { setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); setAuthError(''); }}
-            className="mt-5 text-xs text-stone-400 hover:text-stone-700 w-full text-center"
-          >
-            {authMode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </button>
+          {authStep === 'email' ? (
+            <>
+              <p className="text-sm text-stone-400 mb-8">Enter your email and we'll send you a code.</p>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={e => setAuthEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendOtp()}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="w-full px-4 py-3 bg-white border border-stone-200 rounded-lg outline-none focus:border-stone-400 text-sm"
+                  autoFocus
+                />
+                {authError && <p className="text-red-400 text-xs">{authError}</p>}
+                <button onClick={sendOtp} disabled={authLoading} className="w-full py-3 bg-stone-800 text-white rounded-lg text-sm hover:bg-stone-900 transition-colors disabled:opacity-50">
+                  {authLoading ? '...' : 'Send code'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-stone-400 mb-8">Check <span className="text-stone-600">{authEmail}</span> — enter the 6-digit code below.</p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={authOtp}
+                  onChange={e => setAuthOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onKeyDown={e => e.key === 'Enter' && verifyOtp()}
+                  placeholder="000000"
+                  className="w-full px-4 py-3 bg-white border border-stone-200 rounded-lg outline-none focus:border-stone-400 text-sm tracking-widest text-center"
+                  autoFocus
+                />
+                {authError && <p className="text-red-400 text-xs">{authError}</p>}
+                <button onClick={verifyOtp} disabled={authLoading} className="w-full py-3 bg-stone-800 text-white rounded-lg text-sm hover:bg-stone-900 transition-colors disabled:opacity-50">
+                  {authLoading ? '...' : 'Verify'}
+                </button>
+              </div>
+              <button onClick={() => { setAuthStep('email'); setAuthOtp(''); setAuthError(''); }} className="mt-5 text-xs text-stone-400 hover:text-stone-700 w-full text-center">
+                Use a different email
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
