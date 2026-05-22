@@ -249,7 +249,10 @@ export default function DailyTracker() {
   };
 
   const removeHabit = async (id) => {
-    await supabase.from('habits').delete().eq('user_id', user.id).eq('id', id);
+    await Promise.all([
+      supabase.from('habits').delete().eq('user_id', user.id).eq('id', id),
+      supabase.from('habit_completions').delete().eq('user_id', user.id).eq('habit_id', id),
+    ]);
     setHabits(habits.filter(h => h.id !== id));
   };
 
@@ -352,7 +355,9 @@ export default function DailyTracker() {
 
   const todayHabits = habitCompletions[today] || {};
   const todayRoutine = routineCompletions[today] || {};
-  const completedToday = Object.values(todayHabits).filter(Boolean).length + Object.values(todayRoutine).filter(Boolean).length;
+  const completedToday =
+    habits.filter(h => todayHabits[h.id]).length +
+    routineItems.filter(r => todayRoutine[r.id]).length;
   const totalToday = habits.length + routineItems.length;
   const weeklyDone = !!weeklyReflections[weekKey] && (weeklyReflections[weekKey].worked || weeklyReflections[weekKey].didnt || weeklyReflections[weekKey].adjust);
 
