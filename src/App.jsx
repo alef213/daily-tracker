@@ -219,7 +219,12 @@ export default function DailyTracker() {
     setAuthLoading(false);
   };
 
-  const signOut = () => supabase.auth.signOut();
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setAuthStep('email');
+    setAuthOtp('');
+    setAuthError('');
+  };
 
   const saveRoutineItemsToDb = async (items) => {
     if (!user) return;
