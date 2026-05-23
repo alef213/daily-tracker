@@ -15,6 +15,13 @@ const ICON_OPTIONS = ['Sun', 'Target', 'Lightbulb', 'Heart', 'Moon', 'Sparkles',
 
 const lsGet = (key) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; } };
 
+const localDate = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 async function migrateFromLocalStorage(userId) {
   if (localStorage.getItem('supabase_migration_done')) return;
 
@@ -32,7 +39,7 @@ async function migrateFromLocalStorage(userId) {
   if (hasData) {
     if (lsHabits?.length) {
       await supabase.from('habits').upsert(
-        lsHabits.map(h => ({ id: h.id, user_id: userId, name: h.name, created_at: h.createdAt || h.created_at || new Date().toISOString().split('T')[0] }))
+        lsHabits.map(h => ({ id: h.id, user_id: userId, name: h.name, created_at: h.createdAt || h.created_at || localDate() }))
       );
     }
     if (lsRoutineItems?.length) {
@@ -101,9 +108,9 @@ export default function DailyTracker() {
   const [view, setView] = useState('today');
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(localDate());
 
-  const todayActual = new Date().toISOString().split('T')[0];
+  const todayActual = localDate();
   const today = selectedDate;
   const isViewingToday = selectedDate === todayActual;
   const isSunday = new Date().getDay() === 0;
@@ -114,13 +121,13 @@ export default function DailyTracker() {
     const day = date.getDay();
     const diff = date.getDate() - day;
     const sunday = new Date(date.setDate(diff));
-    return sunday.toISOString().split('T')[0];
+    return localDate(sunday);
   }
 
   const shiftDate = (days) => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + days);
-    const next = d.toISOString().split('T')[0];
+    const next = localDate(d);
     if (next > todayActual) return;
     setSelectedDate(next);
   };
@@ -354,7 +361,7 @@ export default function DailyTracker() {
     let streak = 0;
     const d = new Date();
     while (true) {
-      const key = d.toISOString().split('T')[0];
+      const key = localDate(d);
       if (completions[key]?.[id]) { streak++; d.setDate(d.getDate() - 1); }
       else { if (key === todayActual && streak === 0) { d.setDate(d.getDate() - 1); continue; } break; }
     }
@@ -365,7 +372,7 @@ export default function DailyTracker() {
     const data = [], d = new Date();
     d.setDate(d.getDate() - 29);
     for (let i = 0; i < 30; i++) {
-      const key = d.toISOString().split('T')[0];
+      const key = localDate(d);
       data.push({ date: key, done: !!completions[key]?.[id] });
       d.setDate(d.getDate() + 1);
     }
