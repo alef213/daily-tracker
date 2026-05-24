@@ -305,15 +305,15 @@ export default function DailyTracker() {
     await supabase.from('routine_completions').upsert({ user_id: user.id, date: today, item_id: id, done: newDone });
   };
 
-  const saveJournal = async () => {
+  const saveJournal = () => {
     if (!activeJournal) return;
-    await supabase.from('journal_entries').upsert({ user_id: user.id, date: today, item_id: activeJournal, entry_text: journalDraft });
     const updated = { ...journalEntries };
     if (!updated[today]) updated[today] = {};
     updated[today][activeJournal] = journalDraft;
     setJournalEntries(updated);
     setActiveJournal(null);
     setJournalDraft('');
+    supabase.from('journal_entries').upsert({ user_id: user.id, date: today, item_id: activeJournal, entry_text: journalDraft });
   };
 
   const openJournal = (id) => {
@@ -326,27 +326,27 @@ export default function DailyTracker() {
     setActiveWeekly(true);
   };
 
-  const saveWeekly = async () => {
-    await supabase.from('weekly_reflections').upsert({ user_id: user.id, week_key: weekKey, ...weeklyDrafts });
+  const saveWeekly = () => {
     setWeeklyReflections({ ...weeklyReflections, [weekKey]: weeklyDrafts });
     setActiveWeekly(false);
+    supabase.from('weekly_reflections').upsert({ user_id: user.id, week_key: weekKey, ...weeklyDrafts });
   };
 
-  const saveRoutineItem = async (item) => {
+  const saveRoutineItem = (item) => {
     const exists = routineItems.find(r => r.id === item.id);
     const updated = exists ? routineItems.map(r => r.id === item.id ? item : r) : [...routineItems, item];
     setRoutineItems(updated);
-    await saveRoutineItemsToDb(updated);
     setEditingRoutine(null);
+    saveRoutineItemsToDb(updated);
   };
 
-  const deleteRoutineItem = async (id) => {
+  const deleteRoutineItem = (id) => {
     const updated = routineItems.filter(r => r.id !== id);
     setRoutineItems(updated);
-    await saveRoutineItemsToDb(updated);
+    saveRoutineItemsToDb(updated);
   };
 
-  const moveRoutineItem = async (id, direction) => {
+  const moveRoutineItem = (id, direction) => {
     const idx = routineItems.findIndex(r => r.id === id);
     if (idx === -1) return;
     const newIdx = idx + direction;
@@ -354,7 +354,7 @@ export default function DailyTracker() {
     const updated = [...routineItems];
     [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
     setRoutineItems(updated);
-    await saveRoutineItemsToDb(updated);
+    saveRoutineItemsToDb(updated);
   };
 
   const calcStreak = (completions, id) => {
