@@ -664,15 +664,15 @@ export default function DailyTracker() {
 
       {isSunday && !weeklyDone && (
         <div className="max-w-6xl mx-auto px-6 mb-4">
-          <button onClick={openWeekly} className="w-full bg-gradient-to-r from-stone-100 to-amber-50 border border-amber-200/50 rounded-lg p-4 flex items-center justify-between hover:from-stone-200 hover:to-amber-100 transition-all">
+          <button onClick={openWeekly} className="w-full bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between hover:bg-red-100 transition-all">
             <div className="flex items-center gap-3">
-              <Sparkles size={16} className="text-amber-700" />
+              <Sparkles size={16} className="text-red-500" />
               <div className="text-left">
-                <div className="text-sm font-medium text-stone-800">Weekly Reflection</div>
-                <div className="text-xs text-stone-500">It's Sunday — a few minutes to reset</div>
+                <div className="text-sm font-medium text-red-700">Weekly Reflection</div>
+                <div className="text-xs text-red-400">It's Sunday — a few minutes to reset</div>
               </div>
             </div>
-            <ChevronRight size={16} className="text-stone-400" />
+            <ChevronRight size={16} className="text-red-300" />
           </button>
         </div>
       )}
@@ -770,12 +770,14 @@ export default function DailyTracker() {
 
           {!isSunday && (
             <section>
-              <button onClick={openWeekly} className="w-full text-left bg-white border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-all flex items-center justify-between">
+              <button onClick={openWeekly} className={`w-full text-left rounded-lg p-4 transition-all flex items-center justify-between border ${weeklyDone ? 'bg-white border-stone-200 hover:border-stone-300' : 'bg-red-50 border-red-200 hover:bg-red-100'}`}>
                 <div className="flex items-center gap-3">
-                  <Sparkles size={14} className="text-stone-400" />
-                  <div className="text-sm text-stone-600">{weeklyDone ? "Edit this week's reflection" : 'Open weekly reflection'}</div>
+                  <Sparkles size={14} className={weeklyDone ? 'text-stone-400' : 'text-red-500'} />
+                  <div className={`text-sm ${weeklyDone ? 'text-stone-600' : 'text-red-700 font-medium'}`}>
+                    {weeklyDone ? "Edit this week's reflection" : "Weekly reflection not done"}
+                  </div>
                 </div>
-                <ChevronRight size={14} className="text-stone-300" />
+                <ChevronRight size={14} className={weeklyDone ? 'text-stone-300' : 'text-red-300'} />
               </button>
             </section>
           )}
