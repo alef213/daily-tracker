@@ -125,7 +125,7 @@ export default function DailyTracker() {
   }
 
   const shiftDate = (days) => {
-    const d = new Date(selectedDate);
+    const d = new Date(selectedDate + 'T00:00:00');
     d.setDate(d.getDate() + days);
     const next = localDate(d);
     if (next > todayActual) return;
